@@ -60,36 +60,36 @@ def detect_scenes_and_save_frames(video_path, output_dir=SCENE_OUTPUT_DIR, thres
     print(f"Detected {len(scene_list)} scenes.")
     return scene_list
 
-def extract_scene_number(filename):
-    """
-    Extracts the scene number from a filename. 
-    The first numeric group following 'scene' is considered the scene number.
+# def extract_scene_number(filename):
+#     """
+#     Extracts the scene number from a filename. 
+#     The first numeric group following 'scene' is considered the scene number.
     
-    Args:
-        filename (str): The name of the file.
+#     Args:
+#         filename (str): The name of the file.
         
-    Returns:
-        int: The scene number if found, otherwise None.
-    """
-    filename = filename.lower()
-    parts = filename.split()
-    # Search for the part containing 'scene' and extract the number
-    for part in parts:
-        if 'scene' in part:
-            chars = []  # Reset for each potential match
-            seen_digits = False
-            for char in part:
-                if char.isdigit():
-                    chars.append(char)
-                    seen_digits = True
-                elif seen_digits:  
-                    break
+#     Returns:
+#         int: The scene number if found, otherwise None.
+#     """
+#     filename = filename.lower()
+#     parts = filename.split()
+#     # Search for the part containing 'scene' and extract the number
+#     for part in parts:
+#         if 'scene' in part:
+#             chars = []  # Reset for each potential match
+#             seen_digits = False
+#             for char in part:
+#                 if char.isdigit():
+#                     chars.append(char)
+#                     seen_digits = True
+#                 elif seen_digits:  
+#                     break
             
-            # Join and convert to int if any digits were found
-            number = ''.join(chars)
-            if number.isdigit():
-                return int(number)
-    return None
+#             # Join and convert to int if any digits were found
+#             number = ''.join(chars)
+#             if number.isdigit():
+#                 return int(number)
+#     return None
 
 
 def generate_scene_captions(model_path, scenes_directory, output_json_file):
@@ -111,18 +111,18 @@ def generate_scene_captions(model_path, scenes_directory, output_json_file):
     
     for image_path in image_files:
         try:
-            scene_number = extract_scene_number(image_path.name)
-            if scene_number is None:
-                print(f"Skipping {image_path.name} - no scene number found")
-                continue
+            # scene_number = extract_scene_number(image_path.name)
+            # if scene_number is None:
+            #     print(f"Skipping {image_path.name} - no scene number found")
+            #     continue
             
             image = Image.open(image_path)
             encoded_image = model.encode_image(image)
             caption = model.caption(encoded_image)["caption"]
             
             # Store in dictionary
-            scene_captions[scene_number] = caption
-            print(f"Processed scene {scene_number}")
+            scene_captions[str(image_path)] = caption
+            print(f"Processed scene {image_path}")
             
         except Exception as e:
             print(f"Error processing {image_path}: {e}")
@@ -145,3 +145,7 @@ def json_creation(model_path, query = VIDEO_TO_DOWNLOAD, output_scene_images_dir
             generate_scene_captions(model_path, output_scene_images_dir, output_json_file_str)
     except Exception as e:
         print(f"Error: {e}")
+
+
+if __name__ == "__main__":
+    json_creation(model_path="./moondream-2b-int8.mf", query="super mario movie trailer",output_scene_images_dir="scene_images",output_json_file_str="scene_captions.json")
