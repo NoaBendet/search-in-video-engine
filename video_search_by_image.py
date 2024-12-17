@@ -1,7 +1,8 @@
 import json
 from pathlib import Path
 import webbrowser
-from config import OUTPUT_JSON_FILE_NAME, SCENE_OUTPUT_DIR
+from config import OUTPUT_JSON_FILE_NAME, SCENE_OUTPUT_DIR, THRESHOLD
+from fuzzywuzzy import fuzz
 from PIL import Image
 import os
 
@@ -13,6 +14,7 @@ def ask_user_for_search():
         input_word = input()
     return input_word 
 
+
 def find_matched_captions(input_word):
     # in later use fuzzy search to find similar words
     matched_scenes = []
@@ -23,7 +25,8 @@ def find_matched_captions(input_word):
         try:
             scene_captions = json.load(f)
             for scene_path, caption in scene_captions.items():
-                if input_word.lower() in caption.lower(): 
+                similarity = fuzz.partial_ratio(input_word.lower(), caption.lower())
+                if similarity >= THRESHOLD:
                     matched_scenes.append(scene_path)
         
         except json.JSONDecodeError:
@@ -31,6 +34,7 @@ def find_matched_captions(input_word):
             return matched_scenes
         
     return matched_scenes
+
 
 def generate_collage(images_path_list):
     # create a collage of the images
