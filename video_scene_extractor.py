@@ -1,8 +1,13 @@
 # video_scene_extractor.py 
+import json
 import os
+from pathlib import Path
+import re
 from yt_dlp import YoutubeDL
 from scenedetect import open_video, SceneManager, ContentDetector, save_images
 from config import YDL_OPTS, SCENE_OUTPUT_DIR, SCENE_THRESHOLD, SCENE_MIN_LENGTH, DEFAULT_VIDEO_OUTPUT_DIR
+import moondream as md
+from PIL import Image
 
 def download_video(query, output_dir=DEFAULT_VIDEO_OUTPUT_DIR):
     """
@@ -55,10 +60,88 @@ def detect_scenes_and_save_frames(video_path, output_dir=SCENE_OUTPUT_DIR, thres
     print(f"Detected {len(scene_list)} scenes.")
     return scene_list
 
+def extract_scene_number(filename):
+    """
+    Extracts the scene number from a filename. 
+    The first numeric group following 'scene' is considered the scene number.
+    
+    Args:
+        filename (str): The name of the file.
+        
+    Returns:
+        int: The scene number if found, otherwise None.
+    """
+    filename = filename.lower()
+    parts = filename.split()
+    # Search for the part containing 'scene' and extract the number
+    for part in parts:
+        if 'scene' in part:
+            chars = []  # Reset for each potential match
+            seen_digits = False
+            for char in part:
+                if char.isdigit():
+                    chars.append(char)
+                    seen_digits = True
+                elif seen_digits:  
+                    break
+            
+            # Join and convert to int if any digits were found
+            number = ''.join(chars)
+            if number.isdigit():
+                return int(number)
+    return None
+
+
+def generate_scene_captions(model_path, scenes_directory):
+    """
+    Generate captions for all scenes in the directory and save them to a JSON file.
+    """
+    scene_captions = {}
+
+    # Initialize model
+    try:
+        model = md.vl(model=model_path)
+        print("Model initialized")
+    except Exception as e:
+        print(f"Error initializing model: {e}")
+        return
+    
+    # Get all image files
+    image_files = list(Path(scenes_directory).glob("*.jpg")) + list(Path(scenes_directory).glob("*.png"))
+    
+    for image_path in image_files:
+        try:
+            scene_number = extract_scene_number(image_path.name)
+            if scene_number is None:
+                print(f"Skipping {image_path.name} - no scene number found")
+                continue
+            
+            image = Image.open(image_path)
+            encoded_image = model.encode_image(image)
+            caption = model.caption(encoded_image)["caption"]
+            
+            # Store in dictionary
+            scene_captions[scene_number] = caption
+            print(f"Processed scene {scene_number}")
+            
+        except Exception as e:
+            print(f"Error processing {image_path}: {e}")
+    
+    output_path = "scene_captions.json"
+    with open(output_path, 'w') as f:
+        # Sort by scene number before saving
+        sorted_captions = dict(sorted(scene_captions.items()))
+        json.dump(sorted_captions, f, indent=2)
+    
+    print(f"Saved captions to {output_path}")
+    return output_path
+
+
 # Main Program
 if __name__ == "__main__":
     try:
         video_file = download_video("super mario movie trailer")
         scenes = detect_scenes_and_save_frames(video_file, output_dir="scenes_images")
+        generate_scene_captions(model_path ="./moondream-2b-int8.mf" , scenes_directory="./scenes_images")
     except Exception as e:
         print(f"Error: {e}")
