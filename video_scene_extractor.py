@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 from yt_dlp import YoutubeDL
 from scenedetect import open_video, SceneManager, ContentDetector, save_images
-from config import YDL_OPTS, SCENE_OUTPUT_DIR, SCENE_THRESHOLD, SCENE_MIN_LENGTH, DEFAULT_VIDEO_OUTPUT_DIR
+from config import OUTPUT_JSON_FILE_NAME, VIDEO_TO_DOWNLOAD, YDL_OPTS, SCENE_OUTPUT_DIR, SCENE_THRESHOLD, SCENE_MIN_LENGTH, DEFAULT_VIDEO_OUTPUT_DIR
 import moondream as md
 from PIL import Image
 
@@ -92,7 +92,7 @@ def extract_scene_number(filename):
     return None
 
 
-def generate_scene_captions(model_path, scenes_directory):
+def generate_scene_captions(model_path, scenes_directory, output_json_file):
     """
     Generate captions for all scenes in the directory and save them to a JSON file.
     """
@@ -127,7 +127,7 @@ def generate_scene_captions(model_path, scenes_directory):
         except Exception as e:
             print(f"Error processing {image_path}: {e}")
     
-    output_path = "scene_captions.json"
+    output_path = output_json_file
     with open(output_path, 'w') as f:
         # Sort by scene number before saving
         sorted_captions = dict(sorted(scene_captions.items()))
@@ -136,12 +136,12 @@ def generate_scene_captions(model_path, scenes_directory):
     print(f"Saved captions to {output_path}")
     return output_path
 
-
-# Main Program
-if __name__ == "__main__":
+def json_creation(model_path, query = VIDEO_TO_DOWNLOAD, output_scene_images_dir = SCENE_OUTPUT_DIR, output_json_file_str = OUTPUT_JSON_FILE_NAME):
     try:
-        video_file = download_video("super mario movie trailer")
-        scenes = detect_scenes_and_save_frames(video_file, output_dir="scenes_images")
-        generate_scene_captions(model_path ="./moondream-2b-int8.mf" , scenes_directory="./scenes_images")
+        file_path = Path(output_json_file_str)
+        if not file_path.exists():
+            video_file = download_video(query)
+            detect_scenes_and_save_frames(video_file, output_dir = output_scene_images_dir)
+            generate_scene_captions(model_path, output_scene_images_dir, output_json_file_str)
     except Exception as e:
         print(f"Error: {e}")
