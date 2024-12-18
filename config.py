@@ -16,3 +16,5 @@ OUTPUT_JSON_FILE_NAME = "scene_captions.json"
 DEFAULT_VIDEO_OUTPUT_DIR = "./"
 
 VIDEO_TO_DOWNLOAD="super mario movie trailer"
+
+THRESHOLD = 70
