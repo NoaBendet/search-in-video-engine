@@ -39,8 +39,20 @@ def connect_to_gemini():
         raise
 
 
-def chat_with_gemini(user_input):
+def chat_with_gemini(user_input, video_file_name="The Super Mario Bros. Movie ｜ Official Trailer.mp4"):
+    """
+    Sends a video to Gemini by extracting frames and sending them with the user input.
+    """
     model = connect_to_gemini()
+
+    video_file = genai.upload_file(video_file_name)
+    while video_file.state.name == 'processing':
+        print("Video is still processing. Please wait...")
+        time.sleep(5)
+        video_file = genai.get_file(video_file.state.name)
+    if video_file.state.name == 'failed':
+        raise ValueError(video_file.state.name)
+     
     prompt = f"""
     You are a video search engine. You are given a video and you need to find the best scenes that match the user input. 
     User input: {user_input}
@@ -48,10 +60,10 @@ def chat_with_gemini(user_input):
     [[start1, end1], [start2, end2], [start3, end3], ...]
     start and end are numbers which represent seconds in the video.
     """
-    # TODO: add the video ! 
-    response = model.generate_content(prompt, max_output_tokens=148, temperature=0.4) 
+    response = model.generate_content([prompt, video_file], temperature=0.4)
+
     print(response.text) # TODO: delete before commit
-    return response
+    return response.text
 
 
 def extract_frames_from_video(time_ranges, timestamp_period=3, video_path="./The Super Mario Bros. Movie ｜ Official Trailer.mp4"):
