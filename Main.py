@@ -17,9 +17,9 @@ def choose_model():
         print("Invalid input. Please type 'i' to search using an image model or 'v' to search using a video model.")
         input_word = input()
     if input_word == 'i':
-        return search_by_image
+        return search_by_image()
     else:
-        return search_by_video
+        return search_by_video()
     
 
 def Main():

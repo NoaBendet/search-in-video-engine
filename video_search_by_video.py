@@ -85,6 +85,7 @@ def chat_with_gemini(user_input, video_file_path="./The Super Mario Bros. Movie 
     1. Start and end times are in ascending order.
     2. Time ranges do not overlap.
     3. Start and end times are within the video duration ({video_duration} seconds).
+    4. Try to avoid blurry images, black screens, or frames with poor visibility.
     User input: {user_input}
     """, video_file],
     generation_config=genai.GenerationConfig(

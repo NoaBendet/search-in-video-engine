@@ -6,6 +6,7 @@ from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit import prompt
 from image_helpers import generate_collage
 from video_scene_extractor import json_creation
+import string
 
 
 def ask_user_for_search():
@@ -17,7 +18,7 @@ def ask_user_for_search():
     """
     json_file_path = Path(OUTPUT_JSON_FILE_NAME)
     # Load unique words from the captions
-    words_list = load_caption_words(json_file_path)
+    words_list = load_caption_words()
     word_completer = WordCompleter(words_list, ignore_case=True)
 
     # Prompt user input with autocomplete
@@ -29,7 +30,7 @@ def ask_user_for_search():
 
 
 def load_caption_words():
-    """Loads all words from the captions in the JSON file."""
+    """Load all words from the captions in the JSON file, removing punctuation."""
     json_file_path = Path(OUTPUT_JSON_FILE_NAME)
     words_set = set()  # To store unique words
     
@@ -38,7 +39,8 @@ def load_caption_words():
             scene_captions = json.load(f)
             for caption in scene_captions.values():
                 words = caption.lower().split()
-                words_set.update(words)
+                cleaned_words = [word.strip(string.punctuation) for word in words]
+                words_set.update(cleaned_words)
     except json.JSONDecodeError:
         print("Error: JSON file is invalid.") 
 
