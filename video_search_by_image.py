@@ -12,8 +12,8 @@ def ask_user_for_search():
     """
     Uses prompt_toolkit to auto-complete user input based on words from captions.
     
-    return: 
-    User input with autocomplete functionality.
+    Returns: 
+        User input with autocomplete functionality.
     """
     json_file_path = Path(OUTPUT_JSON_FILE_NAME)
     # Load unique words from the captions
@@ -29,7 +29,7 @@ def ask_user_for_search():
 
 
 def load_caption_words():
-    """Load all words from the captions in the JSON file."""
+    """Loads all words from the captions in the JSON file."""
     json_file_path = Path(OUTPUT_JSON_FILE_NAME)
     words_set = set()  # To store unique words
     
@@ -46,7 +46,15 @@ def load_caption_words():
 
 
 def find_matched_captions(input_word):
-    # in later use fuzzy search to find similar words
+    """
+    Finds and returns a list of scene paths with captions matching the input word using fuzzy search.
+
+    Parameters:
+        input_word (str): The word or phrase to search for within scene captions.
+
+    Returns:
+        list: A list of scene paths where the captions have a similarity score above the defined `THRESHOLD`.
+    """
     matched_scenes = []
     json_file_path = Path(OUTPUT_JSON_FILE_NAME)
 
@@ -64,10 +72,12 @@ def find_matched_captions(input_word):
         
     return matched_scenes
 
+
 def search_by_image():
     """
-        This function facilitates a search process based on video input, image to text model and user request.
-        Returns: a collage based on extracted video frames.
+    This function facilitates a search process based on video input, image to text model and user request.
+    Returns: 
+        a collage based on extracted video frames.
     """
     json_creation(model_path="./moondream-2b-int8.mf", query="super mario movie trailer",output_scene_images_dir="scene_images",output_json_file_str="scene_captions.json")
     input = ask_user_for_search()
