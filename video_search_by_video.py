@@ -1,4 +1,7 @@
+import json
 import os
+from pathlib import Path
+import time
 from dotenv import load_dotenv
 import google.generativeai as genai
 import cv2
@@ -6,6 +9,8 @@ import os
 import numpy as np
 from config import EXTRACTED_IMAGES_DIR
 from image_helpers import generate_collage
+from moviepy import VideoFileClip
+
 
 def ask_user_input():
     print("Using a video model. What would you like me to find in the video?")
@@ -28,7 +33,7 @@ def connect_to_gemini():
             raise ValueError("GEMINI_API_KEY not found in .env file")
 
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-1.5-pro')
         return model
 
     except ValueError as ve:
@@ -39,31 +44,72 @@ def connect_to_gemini():
         raise
 
 
-def chat_with_gemini(user_input, video_file_name="The Super Mario Bros. Movie ｜ Official Trailer.mp4"):
+def chat_with_gemini(user_input, video_file_path="./The Super Mario Bros. Movie ｜ Official Trailer.mp4"):
     """
     Sends a video to Gemini by extracting frames and sending them with the user input.
     """
     model = connect_to_gemini()
+    print("connected to model")
 
-    video_file = genai.upload_file(video_file_name)
-    while video_file.state.name == 'processing':
-        print("Video is still processing. Please wait...")
-        time.sleep(5)
-        video_file = genai.get_file(video_file.state.name)
-    if video_file.state.name == 'failed':
-        raise ValueError(video_file.state.name)
-     
-    prompt = f"""
-    You are a video search engine. You are given a video and you need to find the best scenes that match the user input. 
+    # Get video duration using moviepy
+    try:
+        with VideoFileClip(video_file_path) as clip:
+            video_duration = clip.duration  
+    except Exception as e:
+        raise ValueError(f"Error extracting video duration: {e}")
+
+    video_file = genai.upload_file(video_file_path)
+    print("uploaded video")
+    # Check processing status with a timeout
+    max_retries = 10  # Adjust the maximum retries as needed
+    retries = 0
+    State = video_file.state.__class__
+
+    while video_file.state != State.ACTIVE:
+        print(f"Waiting for video file to become ACTIVE. Current state: {video_file.state}. Retry {retries + 1}/{max_retries}")
+        time.sleep(15)
+        video_file = genai.get_file(video_file.name)
+        retries += 1
+
+    response = model.generate_content(
+    [f"""
+    You are a video search engine. Analyze the given video and identify the best scenes matching the user input in this video.
+    Provide the results ONLY in the following JSON format with no explanation at all:
+    [
+        [start1, end1],
+        [start2, end2],
+        [start3, end3]
+    ]
+    Where 'start' and 'end' are numbers representing seconds in the video.
+      Make sure:
+    1. Start and end times are in ascending order.
+    2. Time ranges do not overlap.
+    3. Start and end times are within the video duration ({video_duration} seconds).
     User input: {user_input}
-    return ONLY by this format:
-    [[start1, end1], [start2, end2], [start3, end3], ...]
-    start and end are numbers which represent seconds in the video.
-    """
-    response = model.generate_content([prompt, video_file], temperature=0.4)
+    """, video_file],
+    generation_config=genai.GenerationConfig(
+        temperature=0.1,
+        max_output_tokens=400
+    )
+)
+   # Handle the response
+    if response and hasattr(response, "text"):
+        response_text = response.text.strip()
+        # Remove all backticks and markers (generalized cleaning)
+        response_text = response_text.replace("```json", "").replace("```", "").strip()
+        try:
+            # Parse the cleaned response
+            timestamps = json.loads(response_text)
+            return timestamps
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON: {e}")
+            raise
+        except ValueError as e:
+            print(f"Validation error: {e}")
+            raise
+    else:
+        raise ValueError("Invalid or empty response from the API.")
 
-    print(response.text) # TODO: delete before commit
-    return response.text
 
 
 def extract_frames_from_video(time_ranges, timestamp_period=3, video_path="./The Super Mario Bros. Movie ｜ Official Trailer.mp4"):
@@ -117,22 +163,13 @@ def extract_frames_from_video(time_ranges, timestamp_period=3, video_path="./The
     return output_dir
 
 
-def create_collage(frame_paths, output_path):
-    """
-    Creates a collage from a list of frame paths.
-    Args:
-        frame_paths (list): A list of paths to frame images.
-        output_path (str): Path to save the final collage.
-    """
-    pass
-
-
 def search_by_video():
     user_input = ask_user_input()
     response = chat_with_gemini(user_input)
-    extract_frames_from_video(response.text)
-    directory_name = create_collage(response.text)
-    generate_collage(os.listdir(directory_name))
+    directory_name = extract_frames_from_video(response)
+    files = os.listdir(directory_name)
+    image_paths_str = [str(Path(directory_name).joinpath(file)) for file in files]
+    generate_collage(image_paths_str)
 
 if __name__ == "__main__":
     search_by_video()
