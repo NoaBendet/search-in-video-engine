@@ -164,6 +164,10 @@ def extract_frames_from_video(time_ranges, timestamp_period=3, video_path="./The
 
 
 def search_by_video():
+    """
+        This function facilitates a search process based on video input and user request.
+        Returns: a collage based on extracted video frames.
+    """
     user_input = ask_user_input()
     response = chat_with_gemini(user_input)
     directory_name = extract_frames_from_video(response)
@@ -171,5 +175,3 @@ def search_by_video():
     image_paths_str = [str(Path(directory_name).joinpath(file)) for file in files]
     generate_collage(image_paths_str)
 
-if __name__ == "__main__":
-    search_by_video()

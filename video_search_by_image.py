@@ -5,6 +5,7 @@ from fuzzywuzzy import fuzz
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit import prompt
 from image_helpers import generate_collage
+from video_scene_extractor import json_creation
 
 
 def ask_user_for_search():
@@ -64,9 +65,11 @@ def find_matched_captions(input_word):
     return matched_scenes
 
 def search_by_image():
+    """
+        This function facilitates a search process based on video input, image to text model and user request.
+        Returns: a collage based on extracted video frames.
+    """
+    json_creation(model_path="./moondream-2b-int8.mf", query="super mario movie trailer",output_scene_images_dir="scene_images",output_json_file_str="scene_captions.json")
     input = ask_user_for_search()
     matched_scenes_list = find_matched_captions(input)
     generate_collage(matched_scenes_list)
-
-if __name__ == "__main__":
-    search_by_image()

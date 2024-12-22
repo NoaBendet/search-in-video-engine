@@ -2,10 +2,12 @@ import webbrowser
 from PIL import Image
 
 def generate_collage(images_path_list):
-    # create a collage of the images
-    # display the collage on the screen
-    # save collage.png file
-    # Assuming images_list contains paths to images
+    """
+    Creates and displays a collage from a list of image paths.
+
+    Parameters:
+        images_path_list (list): A list of file paths to the images that will be included in the collage.
+    """
     if not images_path_list:
         print("No images found for the given search term.")
         return
@@ -16,6 +18,7 @@ def generate_collage(images_path_list):
     output_file = "collage.png"
     create_collage(images_path_list, collage_width, collage_height, output_file)
     webbrowser.open(output_file)
+
 
 def create_collage(images_path_list, collage_width, collage_height, output_file):
     """
