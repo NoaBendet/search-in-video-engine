@@ -41,13 +41,10 @@ def create_collage(images_path_list, collage_width, collage_height, output_file)
         print("No images found for the given search term.")
         return
 
-    if num_images == 1:
-        cols = 1
-    else:
-        cols = int(num_images ** 0.5) + 1 
-    rows = (num_images // cols)
-    if num_images % cols:
-        rows += 1
+    cols = int(num_images ** 0.5)
+    rows = cols
+    while rows * cols < num_images:
+        cols += 1
     
     # Resize images to fit into the grid
     thumb_width = collage_width // cols
@@ -60,16 +57,16 @@ def create_collage(images_path_list, collage_width, collage_height, output_file)
     # Create a blank canvas for the collage
     collage = Image.new('RGB', (collage_width, collage_height), color=(255, 255, 255))
 
-    # Paste images into the collage
+ # Paste images into the collage
     x_offset = 0
     y_offset = 0
-    for img in resized_images:
+    for idx, img in enumerate(resized_images):
         collage.paste(img, (x_offset, y_offset))
         x_offset += thumb_width
-        if x_offset >= collage_width:
+        if (idx + 1) % cols == 0:  # Move to the next row after filling a row
             x_offset = 0
             y_offset += thumb_height
-
+            
     # Save the collage
     collage.save(output_file)
     print(f"Collage created and saved to {output_file}")
